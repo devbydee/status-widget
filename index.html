@@ -29,8 +29,23 @@ body {
   border: 0;
 }
 
-#statuscafe-username {
-  display: none;
+#statuscafe-username,
+.status-meta {
+  display: block;
+  margin: 0 0 4px;
+  padding: 0;
+  color: rgba(210, 190, 164, 0.58);
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#statuscafe-username a,
+.status-meta a {
+  color: rgba(210, 190, 164, 0.68);
+  text-decoration: none;
 }
 
 #statuscafe-content {
@@ -46,36 +61,121 @@ body {
   color: #d2bea4;
   text-decoration: none;
 }
+
+.loading {
+  color: rgba(210, 190, 164, 0.55);
+}
 </style>
 </head>
 
 <body>
   <div id="statuscafe">
-    <div id="statuscafe-username"></div>
-    <div id="statuscafe-content">loading status...</div>
+    <div id="statuscafe-username" class="status-meta">d3ofi</div>
+    <div id="statuscafe-content" class="loading">loading status...</div>
   </div>
 
-  <script src="https://status.cafe/current-status.js?name=d3ofi" defer></script>
+<script>
+const STATUS_USER = "d3ofi";
+const STATUS_PAGE = "https://status.cafe/users/" + STATUS_USER;
+const ATOM_URL = STATUS_PAGE + ".atom";
 
-  <script>
-  function sendHeight() {
-    const height = document.documentElement.scrollHeight;
-    window.parent.postMessage(
-      {
-        type: "d-status-height",
-        height: height
-      },
-      "*"
-    );
+const metaEl = document.getElementById("statuscafe-username");
+const contentEl = document.getElementById("statuscafe-content");
+
+function sendHeight() {
+  const height = document.documentElement.scrollHeight;
+  window.parent.postMessage(
+    {
+      type: "d-status-height",
+      height: height
+    },
+    "*"
+  );
+}
+
+function timeAgo(date) {
+  const diff = Math.max(0, Date.now() - date.getTime());
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < minute) return "just now";
+  if (diff < hour) {
+    const mins = Math.floor(diff / minute);
+    return mins + " minute" + (mins === 1 ? "" : "s") + " ago";
+  }
+  if (diff < day) {
+    const hours = Math.floor(diff / hour);
+    return hours + " hour" + (hours === 1 ? "" : "s") + " ago";
   }
 
-  window.addEventListener("load", sendHeight);
-  window.addEventListener("resize", sendHeight);
+  const days = Math.floor(diff / day);
+  return days + " day" + (days === 1 ? "" : "s") + " ago";
+}
 
+function cleanText(text) {
+  return (text || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function finish() {
+  contentEl.classList.remove("loading");
+  requestAnimationFrame(sendHeight);
   setTimeout(sendHeight, 300);
-  setTimeout(sendHeight, 1000);
+}
 
-  new ResizeObserver(sendHeight).observe(document.body);
-  </script>
+function loadStatusCafeFallback() {
+  const script = document.createElement("script");
+  script.src = "https://status.cafe/current-status.js?name=" + encodeURIComponent(STATUS_USER);
+  script.defer = true;
+  document.body.appendChild(script);
+
+  setTimeout(() => {
+    if (!cleanText(metaEl.textContent)) {
+      metaEl.innerHTML = `<a href="${STATUS_PAGE}" target="_blank">${STATUS_USER}</a>`;
+    }
+
+    if (!cleanText(contentEl.textContent) || cleanText(contentEl.textContent) === "loading status...") {
+      contentEl.textContent = "status unavailable";
+    }
+
+    finish();
+  }, 1200);
+}
+
+async function loadAtomStatus() {
+  const response = await fetch(ATOM_URL + "?cache=" + Date.now());
+  if (!response.ok) throw new Error("status feed failed");
+
+  const xmlText = await response.text();
+  const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+  const entry = doc.querySelector("entry");
+
+  if (!entry) throw new Error("no status entry");
+
+  const statusText = cleanText(
+    entry.querySelector("content")?.textContent ||
+    entry.querySelector("summary")?.textContent ||
+    entry.querySelector("title")?.textContent
+  );
+
+  const updatedText =
+    entry.querySelector("updated")?.textContent ||
+    entry.querySelector("published")?.textContent;
+
+  const updatedDate = updatedText ? new Date(updatedText) : null;
+  const ageText = updatedDate && !isNaN(updatedDate) ? " • " + timeAgo(updatedDate) : "";
+
+  metaEl.innerHTML = `<a href="${STATUS_PAGE}" target="_blank">${STATUS_USER}</a>${ageText}`;
+  contentEl.textContent = statusText || "no status yet";
+  finish();
+}
+
+loadAtomStatus().catch(loadStatusCafeFallback);
+window.addEventListener("load", sendHeight);
+window.addEventListener("resize", sendHeight);
+new ResizeObserver(sendHeight).observe(document.body);
+</script>
 </body>
 </html>
