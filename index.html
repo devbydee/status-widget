@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+@font-face {
+  font-family: "DOS";
+  src: url("https://file.garden/ZswAc6hgIRcOzeXF/Web437_DOS-V_re_ANK24.woff2") format("woff2");
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #d2bea4;
+  font-family: "DOS", monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow: hidden;
+}
+
+#statuscafe {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+#statuscafe-username {
+  display: none;
+}
+
+#statuscafe-content {
+  margin: 0;
+  padding: 0;
+  color: #d2bea4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+#statuscafe-content a {
+  color: #d2bea4;
+  text-decoration: none;
+}
+</style>
+</head>
+
+<body>
+  <div id="statuscafe">
+    <div id="statuscafe-username"></div>
+    <div id="statuscafe-content">loading status...</div>
+  </div>
+
+  <script src="https://status.cafe/current-status.js?name=d3ofi" defer></script>
+
+  <script>
+  function sendHeight() {
+    const height = document.documentElement.scrollHeight;
+    window.parent.postMessage(
+      {
+        type: "d-status-height",
+        height: height
+      },
+      "*"
+    );
+  }
+
+  window.addEventListener("load", sendHeight);
+  window.addEventListener("resize", sendHeight);
+
+  setTimeout(sendHeight, 300);
+  setTimeout(sendHeight, 1000);
+
+  new ResizeObserver(sendHeight).observe(document.body);
+  </script>
+</body>
+</html>
