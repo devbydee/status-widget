@@ -1,243 +1,261 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --meta: #d7cdbf;
-  --text: #fff8ec;
-}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>status</title>
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+  <style>
+    :root {
+      --cream: #eee9dc;
+      --red: #8b4741;
+      --soft-red: #a06d68;
+    }
 
-html,
-body {
-  width: 100%;
-  min-height: 100%;
-  background: transparent;
-  overflow: hidden;
-}
+    html.dark {
+      --cream: #262220;
+      --red: #d3aaa5;
+      --soft-red: #a9827e;
+    }
 
-body {
-  color: var(--text);
-  font-family: "Work Sans", Arial, Helvetica, sans-serif;
-  font-size: 8px;
-  font-weight: 500;
-  line-height: 1.18;
-}
+    * {
+      box-sizing: border-box;
+      cursor: url("https://cdn.cursors-4u.net/previews/tiny-grey-pointer-544443a3-32.webp") 32 32, auto !important;
+    }
 
-#statuscafe {
-  width: 100%;
-  padding: 3px 4px 2px;
-  background: transparent;
-}
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background: transparent;
+      overflow: hidden;
+    }
 
-#statuscafe-username {
-  display: block;
-  margin: 0 0 2px;
-  color: var(--meta);
-  font-size: 7px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+    body {
+      color: var(--red);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      line-height: 1.35;
+    }
 
-#statuscafe-username a {
-  color: inherit;
-  text-decoration: none;
-}
+    ::selection {
+      background: var(--red);
+      color: var(--cream);
+    }
 
-#statuscafe-content {
-  display: block;
-  color: var(--text);
-  font-size: 8px;
-  font-weight: 500;
-  line-height: 1.18;
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: normal;
-}
+    #statuscafe {
+      width: 100%;
+      padding: 0;
+    }
 
-#statuscafe-content a {
-  color: inherit;
-  text-decoration: none;
-}
+    #statuscafe-username {
+      margin: 0 0 4px;
+      color: var(--soft-red);
+      font-size: 9px;
+      line-height: 1.2;
+    }
 
-.loading {
-  color: rgba(255, 248, 236, 0.65);
-}
-</style>
+    #statuscafe-username a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    #statuscafe-username a:hover,
+    #statuscafe-username a:focus-visible {
+      background: var(--red);
+      color: var(--cream);
+      outline: none;
+    }
+
+    #statuscafe-content {
+      color: var(--red);
+      font-size: 11px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    #statuscafe-content a {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .loading {
+      color: var(--soft-red);
+    }
+  </style>
 </head>
+
 <body>
-<div id="statuscafe">
-  <div id="statuscafe-username">D3OFI</div>
-  <div id="statuscafe-content" class="loading">loading status...</div>
-</div>
+  <div id="statuscafe">
+    <div id="statuscafe-username">d3ofi</div>
+    <div id="statuscafe-content" class="loading">loading status...</div>
+  </div>
 
-<script>
-const STATUS_USER = "d3ofi";
-const STATUS_PAGE = "https://status.cafe/users/" + STATUS_USER;
-const ATOM_URL = STATUS_PAGE + ".atom";
+  <script>
+    const STATUS_USER = "d3ofi";
+    const STATUS_PAGE = `https://status.cafe/users/${STATUS_USER}`;
+    const ATOM_URL = `${STATUS_PAGE}.atom`;
 
-const metaEl = document.getElementById("statuscafe-username");
-const contentEl = document.getElementById("statuscafe-content");
+    const metaEl = document.getElementById("statuscafe-username");
+    const contentEl = document.getElementById("statuscafe-content");
 
-function sendHeight() {
-  window.parent.postMessage(
-    {
-      type: "d-status-height",
-      height: Math.ceil(document.documentElement.scrollHeight)
-    },
-    "*"
-  );
-}
+    function applyTheme(theme) {
+      document.documentElement.classList.toggle("dark", theme === "dark");
+    }
 
-function cleanText(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
+    try {
+      const savedTheme = localStorage.getItem("hiddentrack-theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      applyTheme(savedTheme || (prefersDark ? "dark" : "light"));
+    } catch {
+      applyTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    }
 
-function timeAgo(date) {
-  const diff = Math.max(0, Date.now() - date.getTime());
-  const minute = 60000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
+    window.addEventListener("message", event => {
+      if (event.data?.type === "hiddentrack-theme") {
+        applyTheme(event.data.theme);
+      }
+    });
 
-  if (diff < minute) return "JUST NOW";
+    function sendHeight() {
+      window.parent.postMessage(
+        {
+          type: "hiddentrack-status-height",
+          height: Math.ceil(document.documentElement.scrollHeight)
+        },
+        "*"
+      );
+    }
 
-  if (diff < hour) {
-    const amount = Math.floor(diff / minute);
-    return amount + " MINUTE" + (amount === 1 ? "" : "S") + " AGO";
-  }
+    function cleanText(value) {
+      return String(value || "").replace(/\s+/g, " ").trim();
+    }
 
-  if (diff < day) {
-    const amount = Math.floor(diff / hour);
-    return amount + " HOUR" + (amount === 1 ? "" : "S") + " AGO";
-  }
+    function timeAgo(date) {
+      const diff = Math.max(0, Date.now() - date.getTime());
+      const minute = 60000;
+      const hour = minute * 60;
+      const day = hour * 24;
 
-  const amount = Math.floor(diff / day);
-  return amount + " DAY" + (amount === 1 ? "" : "S") + " AGO";
-}
+      if (diff < minute) {
+        return "just now";
+      }
 
-function setStatus(text, date) {
-  const age = date && !Number.isNaN(date.getTime()) ? timeAgo(date) : "";
-  metaEl.innerHTML =
-    '<a href="' + STATUS_PAGE + '" target="_blank" rel="noopener noreferrer">' +
-    STATUS_USER.toUpperCase() +
-    "</a>" +
-    (age ? " - " + age : "");
+      if (diff < hour) {
+        const amount = Math.floor(diff / minute);
+        return `${amount} minute${amount === 1 ? "" : "s"} ago`;
+      }
 
-  contentEl.textContent = cleanText(text) || "no status yet";
-  contentEl.classList.remove("loading");
+      if (diff < day) {
+        const amount = Math.floor(diff / hour);
+        return `${amount} hour${amount === 1 ? "" : "s"} ago`;
+      }
 
-  requestAnimationFrame(sendHeight);
-  setTimeout(sendHeight, 150);
-  setTimeout(sendHeight, 500);
-}
+      const amount = Math.floor(diff / day);
+      return `${amount} day${amount === 1 ? "" : "s"} ago`;
+    }
 
-async function loadAtomStatus() {
-  const response = await fetch(ATOM_URL + "?cache=" + Date.now());
+    function setStatus(text, date) {
+      const age = date && !Number.isNaN(date.getTime()) ? timeAgo(date) : "";
 
-  if (!response.ok) {
-    throw new Error("status feed failed");
-  }
+      metaEl.innerHTML =
+        `<a href="${STATUS_PAGE}" target="_blank" rel="noopener noreferrer">${STATUS_USER}</a>` +
+        (age ? ` · ${age}` : "");
 
-  const xmlText = await response.text();
-  const doc = new DOMParser().parseFromString(xmlText, "application/xml");
-  const entry = doc.querySelector("entry");
+      contentEl.textContent = cleanText(text) || "no status yet";
+      contentEl.classList.remove("loading");
 
-  if (!entry) {
-    throw new Error("no status entry");
-  }
+      requestAnimationFrame(sendHeight);
+      setTimeout(sendHeight, 150);
+      setTimeout(sendHeight, 500);
+    }
 
-  const text =
-    entry.querySelector("content")?.textContent ||
-    entry.querySelector("summary")?.textContent ||
-    entry.querySelector("title")?.textContent ||
-    "";
+    async function loadAtomStatus() {
+      const response = await fetch(`${ATOM_URL}?cache=${Date.now()}`);
 
-  const dateText =
-    entry.querySelector("updated")?.textContent ||
-    entry.querySelector("published")?.textContent ||
-    "";
+      if (!response.ok) {
+        throw new Error("status feed failed");
+      }
 
-  setStatus(text, dateText ? new Date(dateText) : null);
-}
+      const xmlText = await response.text();
+      const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+      const entry = doc.querySelector("entry");
 
-function loadFallback() {
-  const fallbackUser = document.createElement("div");
-  const fallbackContent = document.createElement("div");
+      if (!entry) {
+        throw new Error("no status entry");
+      }
 
-  fallbackUser.id = "statuscafe-fallback-user";
-  fallbackContent.id = "statuscafe-fallback-content";
+      const text =
+        entry.querySelector("content")?.textContent ||
+        entry.querySelector("summary")?.textContent ||
+        entry.querySelector("title")?.textContent ||
+        "";
 
-  fallbackUser.style.display = "none";
-  fallbackContent.style.display = "none";
+      const dateText =
+        entry.querySelector("updated")?.textContent ||
+        entry.querySelector("published")?.textContent ||
+        "";
 
-  document.body.appendChild(fallbackUser);
-  document.body.appendChild(fallbackContent);
+      setStatus(text, dateText ? new Date(dateText) : null);
+    }
 
-  const originalUser = document.getElementById("statuscafe-username");
-  const originalContent = document.getElementById("statuscafe-content");
+    function loadFallback() {
+      const fallbackUser = document.createElement("div");
+      const fallbackContent = document.createElement("div");
 
-  originalUser.id = "statuscafe-username-display";
-  originalContent.id = "statuscafe-content-display";
+      fallbackUser.style.display = "none";
+      fallbackContent.style.display = "none";
+      fallbackUser.id = "statuscafe-username-fallback";
+      fallbackContent.id = "statuscafe-content-fallback";
 
-  fallbackUser.id = "statuscafe-username";
-  fallbackContent.id = "statuscafe-content";
+      document.body.append(fallbackUser, fallbackContent);
 
-  const script = document.createElement("script");
-  script.src = "https://status.cafe/current-status.js?name=" + encodeURIComponent(STATUS_USER);
-  document.body.appendChild(script);
+      const displayUser = metaEl;
+      const displayContent = contentEl;
 
-  setTimeout(() => {
-    const rawMeta = cleanText(fallbackUser.textContent);
-    const rawContent = cleanText(fallbackContent.textContent);
+      displayUser.id = "statuscafe-username-display";
+      displayContent.id = "statuscafe-content-display";
+      fallbackUser.id = "statuscafe-username";
+      fallbackContent.id = "statuscafe-content";
 
-    fallbackUser.remove();
-    fallbackContent.remove();
+      const script = document.createElement("script");
+      script.src = `https://status.cafe/current-status.js?name=${encodeURIComponent(STATUS_USER)}`;
+      document.body.appendChild(script);
 
-    originalUser.id = "statuscafe-username";
-    originalContent.id = "statuscafe-content";
+      setTimeout(() => {
+        const rawMeta = cleanText(fallbackUser.textContent);
+        const rawContent = cleanText(fallbackContent.textContent);
+        const match = rawMeta.match(/(\d+)\s+(minute|hour|day)s?\s+ago/i);
+        const age = match ? match[0].toLowerCase() : "";
 
-    const match = rawMeta.match(/(\d+)\s+(minute|hour|day)s?\s+ago/i);
-    const age = match ? match[0].toUpperCase() : "";
+        fallbackUser.remove();
+        fallbackContent.remove();
 
-    originalUser.innerHTML =
-      '<a href="' + STATUS_PAGE + '" target="_blank" rel="noopener noreferrer">' +
-      STATUS_USER.toUpperCase() +
-      "</a>" +
-      (age ? " - " + age : "");
+        displayUser.id = "statuscafe-username";
+        displayContent.id = "statuscafe-content";
+        displayUser.innerHTML =
+          `<a href="${STATUS_PAGE}" target="_blank" rel="noopener noreferrer">${STATUS_USER}</a>` +
+          (age ? ` · ${age}` : "");
+        displayContent.textContent =
+          rawContent && rawContent.toLowerCase() !== "loading status..."
+            ? rawContent
+            : "status unavailable";
+        displayContent.classList.remove("loading");
 
-    originalContent.textContent =
-      rawContent && rawContent.toLowerCase() !== "loading status..."
-        ? rawContent
-        : "status unavailable";
+        requestAnimationFrame(sendHeight);
+      }, 1200);
+    }
 
-    originalContent.classList.remove("loading");
-    requestAnimationFrame(sendHeight);
-  }, 1200);
-}
+    loadAtomStatus().catch(loadFallback);
 
-loadAtomStatus().catch(loadFallback);
+    window.addEventListener("load", sendHeight);
+    window.addEventListener("resize", sendHeight);
 
-window.addEventListener("load", sendHeight);
-window.addEventListener("resize", sendHeight);
-
-if ("ResizeObserver" in window) {
-  new ResizeObserver(sendHeight).observe(document.body);
-}
-</script>
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(sendHeight).observe(document.body);
+    }
+  </script>
 </body>
 </html>
